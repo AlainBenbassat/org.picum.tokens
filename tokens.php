@@ -4,30 +4,123 @@ require_once 'tokens.civix.php';
 use CRM_Tokens_ExtensionUtil as E;
 
 function tokens_civicrm_tokens(&$tokens) {
-    $tokens['PICUM'] = array(
-        'picum.membership_fee_table_en' => 'Membership Fee Table EN',
-    );
+  $tokens['PICUM'] = [
+    'picum.membership_fee_table_en' => 'Membership Fee Table EN',
+    'picum.membership_fee_table_fr' => 'Membership Fee Table FR',
+    'picum.membership_fee_table_es' => 'Membership Fee Table ES',
+  ];
 }
 
 function tokens_civicrm_tokenValues(&$values, $cids, $job = null, $tokens = [], $context = null) {
-    if (array_key_exists('picum', $tokens) && in_array('picum.membership_fee_table_en', $tokens['picum'])) {
-        tokens_get_picum_membership_fee_table('en', 'picum.membership_fee_table_en', $values, $cids);
-    }
-    elseif (array_key_exists('picum', $tokens) && in_array('picum.membership_fee_table_fr', $tokens['picum'])) {
-        tokens_get_picum_membership_fee_table('en', 'picum.membership_fee_table_fr', $values, $cids);
-    }
-    elseif (array_key_exists('picum', $tokens) && in_array('picum.membership_fee_table_es', $tokens['picum'])) {
-        tokens_get_picum_membership_fee_table('en', 'picum.membership_fee_table_es', $values, $cids);
-    }
+  if (array_key_exists('picum', $tokens) && in_array('membership_fee_table_en', $tokens['picum'])) {
+    tokens_get_picum_membership_fee_table('en', 'picum.membership_fee_table_en', $values, $cids);
+  }
+  elseif (array_key_exists('picum', $tokens) && in_array('membership_fee_table_fr', $tokens['picum'])) {
+    tokens_get_picum_membership_fee_table('fr', 'picum.membership_fee_table_fr', $values, $cids);
+  }
+  elseif (array_key_exists('picum', $tokens) && in_array('membership_fee_table_es', $tokens['picum'])) {
+    tokens_get_picum_membership_fee_table('es', 'picum.membership_fee_table_es', $values, $cids);
+  }
 }
 
 function tokens_get_picum_membership_fee_table($lang, $tokenName, &$values, $cids) {
-    foreach ($cids as $cid) {
-        // check the type of contact
-        if ($values[$cid]['contact_type'] == 'Individual') {
-            // get the
+  $line = [
+    'en' => 'Membership fee year ',
+    'fr' => 'Membership fee year ',
+    'es' => 'Membership fee year ',
+  ];
+
+  foreach ($cids as $cid) {
+    // check the type of contact
+    if ($values[$cid]['contact_type'] == 'Individual') {
+      // get the employer
+      $orgId = tokens_get_employer($cid);
+      if ($orgId) {
+        $tableLines = [];
+
+        // get the current year
+        $year = date('Y');
+
+        // get the maximum member dues ever paid
+        $price = tokens_get_picum_max_contrib($orgId);
+        if (!$price) {
+          $price = 500; // WHAT SHOULD WE DO!!!!!!!!!!!!!!!!!!!!!!!!!
         }
+
+        $total = 0;
+
+        // get the pending contribs for the 3 previous years
+        $i = 2;
+        while ($i >= 0) {
+          $y = $year - $i;
+          $contrib = tokens_get_picum_pending_contrib_for_year($y, $orgId);
+          if ($contrib) {
+            $tableLines[$y] = $price;
+            $total += $price;
+          }
+
+          $i--;
+        }
+
+        // build the table
+        $table = '<table>';
+        foreach ($tableLines as $y => $p) {
+          $table .= '<tr><td>' . $line[$lang] . $y . '</td><td>' . $p . ' euro</td></tr><table>';
+        }
+
+        // add the total and close the table
+        $table .= '<tr><td>Total</td><td>' . $total . ' euro</td></tr></table>';
+        var_dump($table);exit;
+        $values[$cid][$tokenName] = $table;
+      }
+      else {
+        // no employer
+        $values[$cid][$tokenName] = '';
+      }
     }
+    else {
+      // not an individual
+      $values[$cid][$tokenName] = '';
+    }
+  }
+}
+
+function tokens_get_picum_max_contrib($orgId) {
+  $MEMBER_DUES = 2;
+  $sql = "select max(total_amount) from civicrm_contribution where financial_type_id = $MEMBER_DUES and contact_id = $orgId";
+  return CRM_Core_DAO::singleValueQuery($sql);
+}
+
+function tokens_get_picum_pending_contrib_for_year($year, $orgId) {
+  $MEMBER_DUES = 2;
+  $STATUS_PENDING = 2;
+
+  $sql = "
+    select 
+      * 
+    from 
+      civicrm_contribution 
+    where 
+      contact_id = $orgId 
+    and 
+      year(receive_date) = $year
+    and 
+      contribution_status_id = $STATUS_PENDING 
+    and financial_type_id = $MEMBER_DUES
+  ";
+  $dao = CRM_Core_DAO::executeQuery($sql);
+  if ($dao->fetch()) {
+    return $dao;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+function tokens_get_employer($personId) {
+  $sql = "select employer_id from civicrm_contact where id = $personId";
+  $orgId = CRM_Core_DAO::singleValueQuery($sql);
+  return $orgId;
 }
 
 /**
