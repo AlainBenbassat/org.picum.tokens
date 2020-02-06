@@ -29,6 +29,12 @@ function tokens_get_picum_membership_fee_table($lang, $tokenName, &$values, $cid
     'fr' => 'Membership fee year ',
     'es' => 'Membership fee year ',
   ];
+  $lineTotal = [
+    'en' => 'Total',
+    'fr' => 'Total',
+    'es' => 'Total',
+  ];
+
 
   foreach ($cids as $cid) {
     // check the type of contact
@@ -47,7 +53,7 @@ function tokens_get_picum_membership_fee_table($lang, $tokenName, &$values, $cid
           $price = 500; // WHAT SHOULD WE DO!!!!!!!!!!!!!!!!!!!!!!!!!
         }
 
-        $total = 0;
+        $total = 0.00;
 
         // get the pending contribs for the 3 previous years
         $i = 2;
@@ -65,12 +71,11 @@ function tokens_get_picum_membership_fee_table($lang, $tokenName, &$values, $cid
         // build the table
         $table = '<table>';
         foreach ($tableLines as $y => $p) {
-          $table .= '<tr><td>' . $line[$lang] . $y . '</td><td>' . $p . ' euro</td></tr><table>';
+          $table .= '<tr style="border: 1px solid black"><td style="border: 1px solid black">' . $line[$lang] . $y . '</td><td style="border: 1px solid black">' . $p . ' euro</td></tr>';
         }
 
         // add the total and close the table
-        $table .= '<tr><td>Total</td><td>' . $total . ' euro</td></tr></table>';
-        var_dump($table);exit;
+        $table .= '<tr style="border: 1px solid black"><td style="border: 1px solid black; font-weight: bold; text-align: right">' . $lineTotal[$lang] . '</td><td style="border: 1px solid black; font-weight: bold">' . sprintf('%0.2f', $total) . ' euro</td></tr></table>';
         $values[$cid][$tokenName] = $table;
       }
       else {
