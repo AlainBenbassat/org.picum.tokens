@@ -4,7 +4,7 @@ require_once 'tokens.civix.php';
 use CRM_Tokens_ExtensionUtil as E;
 
 function tokens_civicrm_tokens(&$tokens) {
-  $tokens['PICUM'] = [
+  $tokens['picum'] = [
     'picum.membership_fee_table_en' => 'Membership Fee Table EN',
     'picum.membership_fee_table_fr' => 'Membership Fee Table FR',
     'picum.membership_fee_table_es' => 'Membership Fee Table ES',
@@ -12,6 +12,11 @@ function tokens_civicrm_tokens(&$tokens) {
 }
 
 function tokens_civicrm_tokenValues(&$values, $cids, $job = null, $tokens = [], $context = null) {
+  // sometimes $cids is not an array
+  if (!is_array($cids)) {
+    $cids = [$cids];
+  }
+
   if (array_key_exists('picum', $tokens) && in_array('membership_fee_table_en', $tokens['picum'])) {
     tokens_get_picum_membership_fee_table('en', 'picum.membership_fee_table_en', $values, $cids);
   }
@@ -80,12 +85,12 @@ function tokens_get_picum_membership_fee_table($lang, $tokenName, &$values, $cid
       }
       else {
         // no employer
-        $values[$cid][$tokenName] = '';
+        $values[$cid][$tokenName] = 'ERROR: employer not found';
       }
     }
     else {
       // not an individual
-      $values[$cid][$tokenName] = '';
+      $values[$cid][$tokenName] = 'ERROR: ' . $values[$cid]['contact_type'] . ' is not the expected contact type';
     }
   }
 }
