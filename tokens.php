@@ -31,74 +31,126 @@ function tokens_civicrm_tokenValues(&$values, $cids, $job = null, $tokens = [], 
 function tokens_get_picum_membership_fee_table($lang, $tokenName, &$values, $cids) {
   $line = [
     'en' => 'Membership fee year ',
-    'fr' => 'Membership fee year ',
-    'es' => 'Membership fee year ',
+    'fr' => 'Frais d\'adhésion année ',
+    'es' => 'Cuota de membresía año  ',
   ];
   $lineTotal = [
     'en' => 'Total',
     'fr' => 'Total',
     'es' => 'Total',
   ];
+  $commentText = [
+    'en',
+    'fr',
+    'en'
+  ];
+  $commentText['en']['open'] = 'Still open, according to our records. Please advise.';
+  $commentText['en']['previous'] = 'Amount based on your previous contribution.';
+  $commentText['en']['guideline'] = 'See table below for the fee guidelines.';
 
+  $commentText['fr']['open'] = 'Toujours en attente selon nos archives. Veuillez nous en informer.';
+  $commentText['fr']['previous'] = 'Montant basé sur votre cotisation précédente.';
+  $commentText['fr']['guideline'] = 'Voir le tableau ci-dessous pour les frais d\'adhésion.';
+
+  $commentText['es']['open'] = 'La contribución sigue pendiente de pago según nuestras cuentas. Quedamos a la espera de su confirmación.';
+  $commentText['es']['previous'] = 'Cantidad basada en su contribución anterior.';
+  $commentText['es']['guideline'] = 'Vea la tabla a continuación con la referencia de las cuotas de membresía.';
 
   foreach ($cids as $cid) {
-    // check the type of contact
-    if ($values[$cid]['contact_type'] == 'Individual') {
-      // get the employer
-      $orgId = tokens_get_employer($cid);
-      if ($orgId) {
-        $tableLines = [];
+    // get the employer
+    $orgId = tokens_get_employer($cid);
+    if ($orgId) {
+      $tableLines = [];
 
-        // get the current year
-        $year = date('Y');
+      // get the current year
+      $year = date('Y');
 
-        // get the maximum member dues ever paid
-        $price = tokens_get_picum_max_contrib($orgId);
-        if (!$price) {
-          $price = 500; // WHAT SHOULD WE DO!!!!!!!!!!!!!!!!!!!!!!!!!
-        }
+      // get the member dues ever paid
+      $price = tokens_get_picum_contrib_fee($orgId);
 
-        $total = 0.00;
+      $total = 0.00;
 
-        // get the pending contribs for the 3 previous years
-        $i = 2;
-        while ($i >= 0) {
-          $y = $year - $i;
-          $contrib = tokens_get_picum_pending_contrib_for_year($y, $orgId);
-          if ($contrib) {
-            $tableLines[$y] = $price;
+      // get the pending contribs for the 3 previous years
+      $i = 2;
+      while ($i >= 0) {
+        $y = $year - $i;
+        $contrib = tokens_get_picum_pending_contrib_for_year($y, $orgId);
+        if ($contrib) {
+          if ($y != $year) {
+            $comment = $commentText['en']['open'];
+          }
+          else {
+            if ($price) {
+              $comment = $commentText['en']['previous'];
+            }
+            else {
+              $comment = $commentText['en']['guideline'];
+            }
+          }
+          $tableLines[] = [$y, $price, $comment];
+
+          if ($price) {
             $total += $price;
           }
-
-          $i--;
         }
 
-        // build the table
-        $table = '<table>';
-        foreach ($tableLines as $y => $p) {
-          $table .= '<tr style="border: 1px solid black"><td style="border: 1px solid black">' . $line[$lang] . $y . '</td><td style="border: 1px solid black">' . $p . ' euro</td></tr>';
+        $i--;
+      }
+
+      // build the table
+      $table = '<table style="border: 1px solid black;width=100%">';
+      foreach ($tableLines as $p) {
+        $table .= '<tr style="border: 1px solid black;padding:5px">';
+        $table .= '<td style="border: 1px solid black;padding:5px">' . $line[$lang] . $p[0] . '</td>';
+        if ($p[1] > 0) {
+          $formattedPrice = sprintf('%0.2f euro', $p[1]);
+        }
+        else {
+          $formattedPrice = '<i>euro</i>';
         }
 
-        // add the total and close the table
-        $table .= '<tr style="border: 1px solid black"><td style="border: 1px solid black; font-weight: bold; text-align: right">' . $lineTotal[$lang] . '</td><td style="border: 1px solid black; font-weight: bold">' . sprintf('%0.2f', $total) . ' euro</td></tr></table>';
-        $values[$cid][$tokenName] = $table;
+        $table .= '<td style="border: 1px solid black;padding:5px">' . $formattedPrice . '</td>';
+        $table .= '<td style="border: 1px solid black;padding:5px">' . $p[2] . '</td>';
+        $table .= '</tr>';
+      }
+
+      // add the total and close the table
+      $table .= '<tr style="border: 1px solid black;padding:5px">';
+      $table .= '<td style="border: 1px solid black; font-weight: bold; text-align: right;padding:5px">' . $lineTotal[$lang] . '</td>';
+      if ($total > 0) {
+        $formattedTotal = sprintf('%0.2f euro', $total);
       }
       else {
-        // no employer
-        $values[$cid][$tokenName] = 'ERROR: employer not found';
+        $formattedTotal = '<i>euro</i>';
       }
+
+      $table .= '<td style="border: 1px solid black; font-weight: bold;padding:5px">' . $formattedTotal . '</td>';
+      $table .= '<td style="border: 1px solid black; font-weight: bold;padding:5px">&nbsp;</td>';
+      $table .= '</tr></table>';
+
+      $values[$cid][$tokenName] = $table;
     }
     else {
-      // not an individual
-      $values[$cid][$tokenName] = 'ERROR: ' . $values[$cid]['contact_type'] . ' is not the expected contact type';
+      // no employer
+      $values[$cid][$tokenName] = 'ERROR: employer not found';
     }
   }
 }
 
-function tokens_get_picum_max_contrib($orgId) {
+function tokens_get_picum_contrib_fee($orgId) {
   $MEMBER_DUES = 2;
-  $sql = "select max(total_amount) from civicrm_contribution where financial_type_id = $MEMBER_DUES and contact_id = $orgId";
-  return CRM_Core_DAO::singleValueQuery($sql);
+  $year = (int)date('Y');
+
+  $price = 0;
+  for ($i = 0; $i <= 3; $i++) {
+    $sql = "select total_amount from civicrm_contribution where financial_type_id = $MEMBER_DUES and contact_id = $orgId and year(receive_date) = " . ($year - $i);
+    $price = CRM_Core_DAO::singleValueQuery($sql);
+    if (isset($price) && $price > 0) {
+      break;
+    }
+  }
+
+  return $price;
 }
 
 function tokens_get_picum_pending_contrib_for_year($year, $orgId) {
@@ -116,7 +168,8 @@ function tokens_get_picum_pending_contrib_for_year($year, $orgId) {
       year(receive_date) = $year
     and 
       contribution_status_id = $STATUS_PENDING 
-    and financial_type_id = $MEMBER_DUES
+    and 
+      financial_type_id = $MEMBER_DUES
   ";
   $dao = CRM_Core_DAO::executeQuery($sql);
   if ($dao->fetch()) {
