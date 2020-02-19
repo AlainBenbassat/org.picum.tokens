@@ -8,6 +8,12 @@ function tokens_civicrm_tokens(&$tokens) {
     'picum.membership_fee_table_en' => 'Membership Fee Table EN',
     'picum.membership_fee_table_fr' => 'Membership Fee Table FR',
     'picum.membership_fee_table_es' => 'Membership Fee Table ES',
+    'picum.debit_note_date_en' => 'Debit Note Date EN',
+    'picum.debit_note_date_fr' => 'Debit Note Date FR',
+    'picum.debit_note_date_es' => 'Debit Note Date ES',
+    'picum.debit_note_due_date_en' => 'Debit Note Due Date EN',
+    'picum.debit_note_due_date_fr' => 'Debit Note Due Date FR',
+    'picum.debit_note_due_date_es' => 'Debit Note Due Date ES',
   ];
 }
 
@@ -25,6 +31,26 @@ function tokens_civicrm_tokenValues(&$values, $cids, $job = null, $tokens = [], 
   }
   elseif (array_key_exists('picum', $tokens) && in_array('membership_fee_table_es', $tokens['picum'])) {
     tokens_get_picum_membership_fee_table('es', 'picum.membership_fee_table_es', $values, $cids);
+  }
+
+  if (array_key_exists('picum', $tokens) && in_array('debit_note_date_en', $tokens['picum'])) {
+    tokens_get_picum_debit_note_date('en', 'picum.debit_note_date_en', $values, $cids);
+  }
+  elseif (array_key_exists('picum', $tokens) && in_array('debit_note_date_fr', $tokens['picum'])) {
+    tokens_get_picum_debit_note_date('fr', 'picum.debit_note_date_fr', $values, $cids);
+  }
+  elseif (array_key_exists('picum', $tokens) && in_array('debit_note_date_es', $tokens['picum'])) {
+    tokens_get_picum_debit_note_date('es', 'picum.debit_note_date_es', $values, $cids);
+  }
+
+  if (array_key_exists('picum', $tokens) && in_array('debit_note_due_date_en', $tokens['picum'])) {
+    tokens_get_picum_debit_note_date('en', 'picum.debit_note_due_date_en', $values, $cids);
+  }
+  elseif (array_key_exists('picum', $tokens) && in_array('debit_note_due_date_fr', $tokens['picum'])) {
+    tokens_get_picum_debit_note_date('fr', 'picum.debit_note_due_date_fr', $values, $cids);
+  }
+  elseif (array_key_exists('picum', $tokens) && in_array('debit_note_due_date_es', $tokens['picum'])) {
+    tokens_get_picum_debit_note_date('es', 'picum.debit_note_due_date_es', $values, $cids);
   }
 }
 
@@ -135,6 +161,35 @@ function tokens_get_picum_membership_fee_table($lang, $tokenName, &$values, $cid
       $values[$cid][$tokenName] = 'ERROR: employer not found';
     }
   }
+}
+
+function tokens_get_picum_debit_note_date($lang, $tokenName, &$values, $cids) {
+  // get the debit note date or due date
+  if (strpos($tokenName, 'due_date') === FALSE) {
+    // date of today
+    $date = new DateTime();
+  }
+  else {
+    // date of today + 30 days
+    $date = new DateTime();
+    $date->add(new DateInterval('P30D'));
+  }
+
+  // format the date in the correct language
+  $formattedDate = tokens_get_picum_formatted_date($lang, $date);
+
+  foreach ($cids as $cid) {
+    $values[$cid][$tokenName] = $formattedDate;
+  }
+}
+
+function tokens_get_picum_formatted_date($lang, $date) {
+  $months = [];
+  $months['en'] = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  $months['fr'] = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  $months['es'] = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+  return $date->format('j') . ' ' . $months[$lang][$date->format('n')] . ' ' . $date->format('Y');
 }
 
 function tokens_get_picum_contrib_fee($orgId) {
