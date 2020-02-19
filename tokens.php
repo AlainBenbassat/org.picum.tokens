@@ -103,14 +103,14 @@ function tokens_get_picum_membership_fee_table($lang, $tokenName, &$values, $cid
         $contrib = tokens_get_picum_pending_contrib_for_year($y, $orgId);
         if ($contrib) {
           if ($y != $year) {
-            $comment = $commentText['en']['open'];
+            $comment = $commentText[$lang]['open'];
           }
           else {
             if ($price) {
-              $comment = $commentText['en']['previous'];
+              $comment = $commentText[$lang]['previous'];
             }
             else {
-              $comment = $commentText['en']['guideline'];
+              $comment = $commentText[$lang]['guideline'];
             }
           }
           $tableLines[] = [$y, $price, $comment];
