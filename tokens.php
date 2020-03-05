@@ -198,7 +198,7 @@ function tokens_get_picum_contrib_fee($orgId) {
 
   $price = 0;
   for ($i = 0; $i <= 3; $i++) {
-    $sql = "select total_amount from civicrm_contribution where financial_type_id = $MEMBER_DUES and contact_id = $orgId and year(receive_date) = " . ($year - $i);
+    $sql = "select total_amount from civicrm_contribution where financial_type_id = $MEMBER_DUES and contact_id = $orgId and trim(source) = '" . 'Fee ' . ($year - $i) . "'";
     $price = CRM_Core_DAO::singleValueQuery($sql);
     if (isset($price) && $price > 0) {
       break;
@@ -220,7 +220,7 @@ function tokens_get_picum_pending_contrib_for_year($year, $orgId) {
     where 
       contact_id = $orgId 
     and 
-      year(receive_date) = $year
+      trim(source) = concat('Fee ', $year)
     and 
       contribution_status_id = $STATUS_PENDING 
     and 
