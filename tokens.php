@@ -23,35 +23,46 @@ function tokens_civicrm_tokenValues(&$values, $cids, $job = null, $tokens = [], 
     $cids = [$cids];
   }
 
-  if (array_key_exists('picum', $tokens) && in_array('membership_fee_table_en', $tokens['picum'])) {
+  if (tokens_has_picum_token('membership_fee_table_en', $tokens)) {
     tokens_get_picum_membership_fee_table('en', 'picum.membership_fee_table_en', $values, $cids);
   }
-  elseif (array_key_exists('picum', $tokens) && in_array('membership_fee_table_fr', $tokens['picum'])) {
+  elseif (tokens_has_picum_token('membership_fee_table_fr', $tokens)) {
     tokens_get_picum_membership_fee_table('fr', 'picum.membership_fee_table_fr', $values, $cids);
   }
-  elseif (array_key_exists('picum', $tokens) && in_array('membership_fee_table_es', $tokens['picum'])) {
+  elseif (tokens_has_picum_token('membership_fee_table_es', $tokens)) {
     tokens_get_picum_membership_fee_table('es', 'picum.membership_fee_table_es', $values, $cids);
   }
 
-  if (array_key_exists('picum', $tokens) && in_array('debit_note_date_en', $tokens['picum'])) {
+  if (tokens_has_picum_token('debit_note_date_en', $tokens)) {
     tokens_get_picum_debit_note_date('en', 'picum.debit_note_date_en', $values, $cids);
   }
-  elseif (array_key_exists('picum', $tokens) && in_array('debit_note_date_fr', $tokens['picum'])) {
+  elseif (tokens_has_picum_token('debit_note_date_fr', $tokens)) {
     tokens_get_picum_debit_note_date('fr', 'picum.debit_note_date_fr', $values, $cids);
   }
-  elseif (array_key_exists('picum', $tokens) && in_array('debit_note_date_es', $tokens['picum'])) {
+  elseif (tokens_has_picum_token('debit_note_date_es', $tokens)) {
     tokens_get_picum_debit_note_date('es', 'picum.debit_note_date_es', $values, $cids);
   }
 
-  if (array_key_exists('picum', $tokens) && in_array('debit_note_due_date_en', $tokens['picum'])) {
+  if (tokens_has_picum_token('debit_note_due_date_en', $tokens)) {
     tokens_get_picum_debit_note_date('en', 'picum.debit_note_due_date_en', $values, $cids);
   }
-  elseif (array_key_exists('picum', $tokens) && in_array('debit_note_due_date_fr', $tokens['picum'])) {
+  elseif (tokens_has_picum_token('debit_note_due_date_fr', $tokens)) {
     tokens_get_picum_debit_note_date('fr', 'picum.debit_note_due_date_fr', $values, $cids);
   }
-  elseif (array_key_exists('picum', $tokens) && in_array('debit_note_due_date_es', $tokens['picum'])) {
+  elseif (tokens_has_picum_token('debit_note_due_date_es', $tokens)) {
     tokens_get_picum_debit_note_date('es', 'picum.debit_note_due_date_es', $values, $cids);
   }
+}
+
+function tokens_has_picum_token($token, $tokens) {
+  $retval = FALSE;
+  if (array_key_exists('picum', $tokens)) {
+    if (in_array($token, $tokens['picum']) || array_key_exists($token, $tokens['picum'])) {
+      $retval = TRUE;
+    }
+  }
+
+  return $retval;
 }
 
 function tokens_get_picum_membership_fee_table($lang, $tokenName, &$values, $cids) {
