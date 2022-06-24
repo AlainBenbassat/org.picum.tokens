@@ -34,20 +34,53 @@ class CRM_Tokens_PicumTokenHelper {
   public function getTokenList() {
     return $this->tokenListInThreeLanguages;
   }
+  
+  public function replacePicumtokens(&$values, $cids, $job = null, $tokens = [], $context = null) {
+    $lang = '';
+    if ($this->hasPicumToken('membership_fee_table', $tokens, $lang)) {
+      $this->setMembershipFeeTable($lang, 'membership_fee_table', $values, $cids);
+    }
 
-  public function hasPicumToken($token, $tokens, &$lang) {
-    $retval = FALSE;
+    if ($this->hasPicumToken('debit_note_date', $tokens, $lang)) {
+      $this->setDebitNoteDate($lang, 'debit_note_date', $values, $cids);
+    }
 
+    if ($this->hasPicumToken('debit_note_due_date', $tokens, $lang)) {
+      $this->setDebitNotedueDate($lang, 'debit_note_due_date', $values, $cids);
+    }
+
+    if ($this->hasPicumToken('pending_fees_label', $tokens, $lang)) {
+      $this->setPendingFeesLabel($lang, 'pending_fees_label', $values, $cids);
+    }
+    if ($this->hasPicumToken('pending_fees_list', $tokens, $lang)) {
+      $this->setPendingFeesList($lang, 'pending_fees_list', $values, $cids);
+    }
+  }
+
+  private function hasPicumToken($token, $tokens, &$lang) {
     if (array_key_exists('picum', $tokens)) {
-      if (in_array($token, $tokens['picum']) || array_key_exists($token, $tokens['picum'])) {
-        $retval = TRUE;
+      $langs = ['en', 'fr', 'es'];
+      foreach ($langs as $possibleLang) {
+        $lang = $possibleLang;
+        if ($this->hasPicumTokenWithLang($token . '_' . $lang, $tokens)) {
+          return TRUE;
+        }
       }
     }
 
-    return $retval;
+    return FALSE;
   }
 
-  public function setMembershipFeeTable($lang, $rawTokenName, &$values, $cids) {
+  private function hasPicumTokenWithLang($token, $tokens) {
+    if (in_array($token, $tokens['picum']) || array_key_exists($token, $tokens['picum'])) {
+      return TRUE;
+    }
+    else {
+      return FALSE;
+    }
+  }
+
+  private function setMembershipFeeTable($lang, $rawTokenName, &$values, $cids) {
     $tokenName = "picum.{$rawTokenName}_$lang";
 
     foreach ($cids as $cid) {
@@ -174,6 +207,22 @@ class CRM_Tokens_PicumTokenHelper {
     }
   }
 
+  public function setPendingFeesLabel($lang, $rawTokenName, &$values, $cids) {
+    $tokenName = "picum.{$rawTokenName}_$lang";
+
+    foreach ($cids as $cid) {
+      $values[$cid][$tokenName] = $this->translations['PENDING_PAYMENTS'][$lang];
+    }
+  }
+
+  public function setPendingFeesList($lang, $rawTokenName, &$values, $cids) {
+    $tokenName = "picum.{$rawTokenName}_$lang";
+
+    foreach ($cids as $cid) {
+      $values[$cid][$tokenName] = $this->getPendingFeesList($cid);
+    }
+  }
+
   private function getFormattedDate($lang, $date) {
     $months = [];
     $months['en'] = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -194,19 +243,19 @@ class CRM_Tokens_PicumTokenHelper {
     $STATUS_PENDING = 2;
 
     $sql = "
-    select 
-      * 
-    from 
-      civicrm_contribution 
-    where 
-      contact_id = $orgId 
-    and 
-      trim(source) = concat('Fee ', $year)
-    and 
-      contribution_status_id = $STATUS_PENDING 
-    and 
-      financial_type_id = $MEMBER_DUES
-  ";
+      select 
+        * 
+      from 
+        civicrm_contribution 
+      where 
+        contact_id = $orgId 
+      and 
+        trim(source) = concat('Fee ', $year)
+      and 
+        contribution_status_id = $STATUS_PENDING 
+      and 
+        financial_type_id = $MEMBER_DUES
+    ";
     $dao = CRM_Core_DAO::executeQuery($sql);
     if ($dao->fetch()) {
       return $dao;
@@ -214,6 +263,31 @@ class CRM_Tokens_PicumTokenHelper {
     else {
       return FALSE;
     }
+  }
+
+  private function getPendingFeesList($cid) {
+    $sql = "
+      select 
+        ifnull(GROUP_CONCAT(c.source order by c.source SEPARATOR ', '), '') fee_list
+      from 
+        civicrm_contribution c
+      where
+        c.contribution_status_id = (
+          select
+            ov.value
+          from 
+            civicrm_option_value ov 
+          inner join
+            civicrm_option_group og on ov.option_group_id = og.id
+          where 
+            og.name = 'contribution_status'
+          and
+            ov.name = 'Pending'
+        )
+        and
+          c.contact_id = $cid
+    ";
+    return CRM_Core_DAO::singleValueQuery($sql);
   }
 
   private function setTranslations() {
@@ -237,5 +311,9 @@ class CRM_Tokens_PicumTokenHelper {
     $this->translations['FREE_GUIDELINES']['en'] = 'See table below for the fee guidelines.';
     $this->translations['FREE_GUIDELINES']['fr'] = 'Voir le tableau ci-dessous pour les frais d\'adhésion.';
     $this->translations['FREE_GUIDELINES']['es'] = 'Vea la tabla a continuación con la referencia de las cuotas de membresía.';
+
+    $this->translations['PENDING_PAYMENTS']['en'] = 'Pending payment(s)';
+    $this->translations['PENDING_PAYMENTS']['fr'] = 'En attente de paiement';
+    $this->translations['PENDING_PAYMENTS']['es'] = 'Pendiente de pago';
   }
 }

@@ -13,25 +13,8 @@ function tokens_civicrm_tokenValues(&$values, $cids, $job = null, $tokens = [], 
     $cids = [$cids];
   }
 
-  $lang = '';
   $helper = CRM_Tokens_PicumTokenHelper::singleton();
-
-  if ($helper->hasPicumToken('membership_fee_table', $tokens, $lang)) {
-    $helper->setMembershipFeeTable($lang, 'membership_fee_table', $values, $cids);
-  }
-
-  if ($helper->hasPicumToken('debit_note_date', $tokens, $lang)) {
-    $helper->setDebitNoteDate($lang, 'debit_note_date', $values, $cids);
-  }
-
-  if ($helper->hasPicumToken('debit_note_due_date', $tokens, $lang)) {
-    $helper->setDebitNotedueDate($lang, 'debit_note_due_date', $values, $cids);
-  }
-
-  // NEW: TO CHANGE!!!!!!!!!!!!!!!!!!!!!!!!
-  if ($helper->hasPicumToken('debit_note_due_date', $tokens, $lang)) {
-    //tokens_get_picum_debit_note_date($lang, 'picum.debit_note_due_date_en', $values, $cids);
-  }
+  $helper->replacePicumtokens($values, $cids, $job, $tokens, $context);
 }
 
 /**
