@@ -102,11 +102,11 @@ class CRM_Tokens_PicumTokenHelper {
     $tableLines = [];
     $total = 0.00;
     $currentYear = (int)date('Y');
-    $mostRecentlyPaidMembershipFee = $this->getMostRecentlyPaidMembershipFee($orgId);
+    $mostRecentlyPaidMembershipFee = (real)$this->getMostRecentlyPaidMembershipFee($orgId);
 
     for ($year = $currentYear; $year < $currentYear - 3; $year--) {
-      $contrib = $this->getPendingContribForYear($year, $orgId);
-      if ($contrib) {
+      $hasContrib = $this->hasPendingContribForYear($year, $orgId);
+      if ($hasContrib) {
         if ($year != $currentYear) {
           $comment = $this->translations['STILL_OPEN'][$lang];
         }
@@ -238,7 +238,7 @@ class CRM_Tokens_PicumTokenHelper {
     return $orgId;
   }
 
-  private function getPendingContribForYear($year, $orgId) {
+  private function hasPendingContribForYear($year, $orgId) {
     $MEMBER_DUES = 2;
     $STATUS_PENDING = 2;
 
@@ -258,7 +258,7 @@ class CRM_Tokens_PicumTokenHelper {
     ";
     $dao = CRM_Core_DAO::executeQuery($sql);
     if ($dao->fetch()) {
-      return $dao;
+      return TRUE;
     }
     else {
       return FALSE;
