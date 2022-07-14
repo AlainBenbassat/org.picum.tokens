@@ -101,10 +101,11 @@ class CRM_Tokens_PicumTokenHelper {
   private function setMembershipFeeTableForCidWithOrgId($lang, $tokenName, &$values, $cid, $orgId) {
     $tableLines = [];
     $total = 0.00;
-    $currentYear = (int)date('Y');
+    $currentYear = date('Y');
+    $threeYearsAgo = $currentYear - 3;
     $mostRecentlyPaidMembershipFee = (real)$this->getMostRecentlyPaidMembershipFee($orgId);
 
-    for ($year = $currentYear; $year < $currentYear - 3; $year--) {
+    for ($year = $currentYear; $year >= $threeYearsAgo; $year--) {
       $hasContrib = $this->hasPendingContribForYear($year, $orgId);
       if ($hasContrib) {
         if ($year != $currentYear) {
